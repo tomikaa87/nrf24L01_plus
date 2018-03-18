@@ -17,11 +17,11 @@
 #include "nRF24L01.h"
 #include <stdint.h>
 
-#define LOW 0
-#define HIGH 1
+#define NRF24_LOW 0
+#define NRF24_HIGH 1
 
 #define nrf24_ADDR_LEN 5
-#define nrf24_CONFIG ((1<<EN_CRC)|(0<<CRCO))
+#define nrf24_CONFIG ((1<<NRF24_EN_CRC)|(0<<NRF24_CRCO))
 
 #define NRF24_TRANSMISSON_OK 0
 #define NRF24_MESSAGE_LOST   1
@@ -96,7 +96,7 @@ extern void nrf24_csn_digitalWrite(uint8_t state);
 /* -------------------------------------------------------------------------- */
 /* nrf24 SPI data transceiver function
  *    - input: data byte to transmit
- *    - return: data byte received from the SPI slave device
+ *    - return: data byte received from the SPI slave device    */
 /* -------------------------------------------------------------------------- */
 extern uint8_t nrf24_spi_exchange(uint8_t data);
 
