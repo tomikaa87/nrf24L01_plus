@@ -13,7 +13,7 @@
 */
 #include "nrf24.h"
 
-uint8_t payload_len;
+static uint8_t payload_len;
 
 /* init the hardware pins */
 void nrf24_init() 
