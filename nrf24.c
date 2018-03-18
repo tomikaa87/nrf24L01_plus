@@ -116,8 +116,8 @@ uint8_t nrf24_payloadLength()
 {
     uint8_t status;
     nrf24_csn_digitalWrite(LOW);
-    spi_transfer(R_RX_PL_WID);
-    status = spi_transfer(0x00);
+    nrf24_spi_exchange(R_RX_PL_WID);
+    status = nrf24_spi_exchange(0x00);
     nrf24_csn_digitalWrite(HIGH);
     return status;
 }
@@ -129,7 +129,7 @@ void nrf24_getData(uint8_t* data)
     nrf24_csn_digitalWrite(LOW);                               
 
     /* Send cmd to read rx payload */
-    spi_transfer( R_RX_PAYLOAD );
+    nrf24_spi_exchange(R_RX_PAYLOAD);
     
     /* Read payload */
     nrf24_transferSync(data,data,payload_len);
@@ -163,10 +163,10 @@ void nrf24_send(uint8_t* value)
     /* Do we really need to flush TX fifo each time ? */
     #if 1
         /* Pull down chip select */
-        nrf24_csn_digitalWrite(LOW);           
+        nrf24_csn_digitalWrite(LOW);
 
         /* Write cmd to flush transmit FIFO */
-        spi_transfer(FLUSH_TX);     
+        nrf24_spi_exchange(FLUSH_TX);
 
         /* Pull up chip select */
         nrf24_csn_digitalWrite(HIGH);                    
@@ -176,7 +176,7 @@ void nrf24_send(uint8_t* value)
     nrf24_csn_digitalWrite(LOW);
 
     /* Write cmd to write payload */
-    spi_transfer(W_TX_PAYLOAD);
+    nrf24_spi_exchange(W_TX_PAYLOAD);
 
     /* Write payload */
     nrf24_transmitSync(value,payload_len);   
@@ -209,7 +209,7 @@ uint8_t nrf24_getStatus()
 {
     uint8_t rv;
     nrf24_csn_digitalWrite(LOW);
-    rv = spi_transfer(NOP);
+    rv = nrf24_spi_exchange(NOP);
     nrf24_csn_digitalWrite(HIGH);
     return rv;
 }
@@ -241,7 +241,7 @@ uint8_t nrf24_lastMessageStatus()
 void nrf24_powerUpRx()
 {     
     nrf24_csn_digitalWrite(LOW);
-    spi_transfer(FLUSH_RX);
+    nrf24_spi_exchange(FLUSH_RX);
     nrf24_csn_digitalWrite(HIGH);
 
     nrf24_configRegister(STATUS,(1<<RX_DR)|(1<<TX_DS)|(1<<MAX_RT)); 
@@ -264,41 +264,6 @@ void nrf24_powerDown()
     nrf24_configRegister(CONFIG,nrf24_CONFIG);
 }
 
-/* software spi routine */
-uint8_t spi_transfer(uint8_t tx)
-{
-    uint8_t i = 0;
-    uint8_t rx = 0;    
-
-    nrf24_sck_digitalWrite(LOW);
-
-    for(i=0;i<8;i++)
-    {
-
-        if(tx & (1<<(7-i)))
-        {
-            nrf24_mosi_digitalWrite(HIGH);            
-        }
-        else
-        {
-            nrf24_mosi_digitalWrite(LOW);
-        }
-
-        nrf24_sck_digitalWrite(HIGH);        
-
-        rx = rx << 1;
-        if(nrf24_miso_digitalRead())
-        {
-            rx |= 0x01;
-        }
-
-        nrf24_sck_digitalWrite(LOW);                
-
-    }
-
-    return rx;
-}
-
 /* send and receive multiple bytes over SPI */
 void nrf24_transferSync(uint8_t* dataout,uint8_t* datain,uint8_t len)
 {
@@ -306,7 +271,7 @@ void nrf24_transferSync(uint8_t* dataout,uint8_t* datain,uint8_t len)
 
     for(i=0;i<len;i++)
     {
-        datain[i] = spi_transfer(dataout[i]);
+        datain[i] = nrf24_spi_exchange(dataout[i]);
     }
 
 }
@@ -318,7 +283,7 @@ void nrf24_transmitSync(uint8_t* dataout,uint8_t len)
     
     for(i=0;i<len;i++)
     {
-        spi_transfer(dataout[i]);
+        nrf24_spi_exchange(dataout[i]);
     }
 
 }
@@ -327,8 +292,8 @@ void nrf24_transmitSync(uint8_t* dataout,uint8_t len)
 void nrf24_configRegister(uint8_t reg, uint8_t value)
 {
     nrf24_csn_digitalWrite(LOW);
-    spi_transfer(W_REGISTER | (REGISTER_MASK & reg));
-    spi_transfer(value);
+    nrf24_spi_exchange(W_REGISTER | (REGISTER_MASK & reg));
+    nrf24_spi_exchange(value);
     nrf24_csn_digitalWrite(HIGH);
 }
 
@@ -336,7 +301,7 @@ void nrf24_configRegister(uint8_t reg, uint8_t value)
 void nrf24_readRegister(uint8_t reg, uint8_t* value, uint8_t len)
 {
     nrf24_csn_digitalWrite(LOW);
-    spi_transfer(R_REGISTER | (REGISTER_MASK & reg));
+    nrf24_spi_exchange(R_REGISTER | (REGISTER_MASK & reg));
     nrf24_transferSync(value,value,len);
     nrf24_csn_digitalWrite(HIGH);
 }
@@ -345,7 +310,7 @@ void nrf24_readRegister(uint8_t reg, uint8_t* value, uint8_t len)
 void nrf24_writeRegister(uint8_t reg, uint8_t* value, uint8_t len) 
 {
     nrf24_csn_digitalWrite(LOW);
-    spi_transfer(W_REGISTER | (REGISTER_MASK & reg));
+    nrf24_spi_exchange(W_REGISTER | (REGISTER_MASK & reg));
     nrf24_transmitSync(value,len);
     nrf24_csn_digitalWrite(HIGH);
 }
